@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creativ Flow - Protected Viewing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .content-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .media-container {
+            position: relative;
+            margin: 20px 0;
+            overflow: hidden;
+            text-align: center;
+        }
+        .media-container img, .media-container video {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            pointer-events: none; /* Prevents right-click and drag on the media */
+        }
+        .protection-notice {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .protection-icon {
+            font-size: 24px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        #protected-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 1000;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+    <div id="protected-overlay"></div>
+    <div class="container">
+        <div class="content-container">
+            <div class="logo">Creativ Flow</div>
+            <h2 class="text-center mb-4">Protected Content</h2>
+            
+            <div class="media-container">
+                {% if file_type == 'image' %}
+                <img src="{{ url_for('static', filename='processed/' + filename) }}" alt="Protected Image" draggable="false">
+                {% else %}
+                <video controls controlsList="nodownload" disablePictureInPicture>
+                    <source src="{{ url_for('static', filename='processed/' + filename) }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                {% endif %}
+            </div>
+            
+            <div class="protection-notice">
+                <span class="protection-icon">🔒</span>
+                <strong>Content Protection:</strong> This media is protected against downloading, screenshots, and unauthorized use. The content includes a "Creativ Flow" watermark.
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="/" class="btn btn-primary">Upload Another File</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Prevent keyboard shortcuts for screenshots
+            document.addEventListener('keydown', function(e) {
+                // Prevent PrintScreen
+                if (e.key === 'PrintScreen' || 
+                    // Prevent Ctrl+Shift+I (Developer Tools)
+                    (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+                    // Prevent Ctrl+Shift+C (Developer Tools Element Inspector)
+                    (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+                    // Prevent Ctrl+S (Save)
+                    (e.ctrlKey && e.key === 's') ||
+                    // Prevent F12 (Developer Tools)
+                    e.key === 'F12') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Disable right-click
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
+
+            // Disable dragging
+            document.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+
+            // Add a watermark overlay pattern
+            function addWatermarkPattern() {
+                const overlay = document.getElementById('protected-overlay');
+                const watermarkText = document.createElement('div');
+                watermarkText.style.position = 'absolute';
+                watermarkText.style.top = '0';
+                watermarkText.style.left = '0';
+                watermarkText.style.width = '100%';
+                watermarkText.style.height = '100%';
+                watermarkText.style.pointerEvents = 'none';
+                watermarkText.style.opacity = '0.1';
+                watermarkText.style.zIndex = '1000';
+                
+                // Create watermark pattern
+                const pattern = document.createElement('div');
+                pattern.innerHTML = 'Creativ Flow';
+                pattern.style.position = 'absolute';
+                pattern.style.fontSize = '20px';
+                pattern.style.color = '#000';
+                pattern.style.transform = 'rotate(-45deg)';
+                
+                // Add multiple instances of the watermark text
+                for (let i = 0; i < 200; i++) {
+                    const clone = pattern.cloneNode(true);
+                    clone.style.left = (Math.random() * 100) + '%';
+                    clone.style.top = (Math.random() * 100) + '%';
+                    watermarkText.appendChild(clone);
+                }
+                
+                overlay.appendChild(watermarkText);
+            }
+            
+            // Add detection for screenshot attempts
+            document.addEventListener('screenshot', function() {
+                alert('Screenshots are not allowed on this page.');
+            });
+            
+            // Detect when the page loses and regains focus (potential screenshot attempt)
+            let blurTime;
+            window.addEventListener('blur', function() {
+                blurTime = new Date().getTime();
+            });
+            
+            window.addEventListener('focus', function() {
+                const timeDiff = new Date().getTime() - blurTime;
+                // If the blur was very brief (like when taking a screenshot), show a warning
+                if (timeDiff < 500) {
+                    alert('Screenshots are not allowed on this page.');
+                }
+            });
+            
+            // Initialize protections
+            addWatermarkPattern();
+        });
+    </script>
+</body>
+</html>
